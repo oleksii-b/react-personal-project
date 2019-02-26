@@ -57,7 +57,7 @@ export default class Scheduler extends Component {
             return item.id !== id;
         });
 
-        this.setState({ filterTasks });
+        this.setState({ tasks: filterTasks });
     };
 
     _updateNewTaskName = (e) => {
