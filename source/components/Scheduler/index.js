@@ -14,9 +14,11 @@ export default class Scheduler extends Component {
     state = {
         newTaskNameHolder: '',
         tasks: [
-            {id: 0, value: 'task1'},
-            {id: 1, value: 'task2'},
-            {id: 2, value: 'task2'},
+            {id: 0, message: 'task1', completed: false, favorite: false},
+            {id: 1, message: 'task2', completed: false, favorite: true},
+            {id: 2, message: 'task3', completed: true, favorite: true},
+            {id: 3, message: 'task4', completed: false, favorite: false},
+            {id: 4, message: 'task5', completed: true, favorite: false},
         ]
     };
 
@@ -26,7 +28,10 @@ export default class Scheduler extends Component {
         let tasks = [...this.state.tasks];
 
         tasks.push({
-            id: `${ this.state.tasks[this.state.tasks.length - 1].id + 1}`, value: this.state.newTaskNameHolder
+            id: `${ this.state.tasks[this.state.tasks.length - 1].id + 1}`,
+            message: this.state.newTaskNameHolder,
+            completed: false,
+            favorite: false
         });
 
         this.setState({
@@ -35,12 +40,24 @@ export default class Scheduler extends Component {
         });
     };
 
+    _updateTask = (task) => {
+        let filterTasks = this.state.tasks.filter((item)=>{
+            return item.id !== task.id;
+        });
+
+        this.setState({
+            tasks: [...filterTasks, task]
+        });
+
+        console.log(task)
+    };
+
     _removeTask = (id) => () => {
-        let tasks = this.state.tasks.filter((item)=>{
+        let filterTasks = this.state.tasks.filter((item)=>{
             return item.id !== id;
         });
 
-        this.setState({ tasks });
+        this.setState({ filterTasks });
     };
 
     _updateNewTaskName = (e) => {
@@ -49,12 +66,29 @@ export default class Scheduler extends Component {
         });
     };
 
+    _customSort = (arr) => {
+        let arrTop = arr.filter((item)=>{
+            return !item.completed;
+        }).sort( (a,b)=>{
+            return (a.favorite === b.favorite) ? 0 : ( a.favorite ? -1 : 1 );
+        } );
+
+        let arrBottom = arr.filter((item)=>{
+            return item.completed;
+        }).sort( (a,b)=>{
+            return (a.favorite === b.favorite) ? 0 : ( a.favorite ? -1 : 1 );
+        } );
+
+        return ( [...arrTop, ...arrBottom] )
+    };
+
     render () {
         const { newTaskNameHolder, tasks } = this.state;
 
-        const todosJSX = tasks.map((props)=>{
+        const todosJSX = this._customSort(tasks).map((props)=>{
             return <Task
                 _removeTask = { this._removeTask }
+                _updateTask = { this._updateTask }
                 key = { props.id } {...props} />
         });
 
