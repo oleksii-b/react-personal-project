@@ -50,6 +50,10 @@
         & .updateTaskMessageOnClick {
             margin-right: 20px;
         }
+        & .off {
+            pointer-events: none;
+            opacity: .3;
+        }
     }
 
     @media (width <= 740px) {

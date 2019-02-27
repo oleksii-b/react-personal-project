@@ -57,7 +57,8 @@ export default class Task extends PureComponent {
                 this._toggleTaskMessageState();
                 break;
             case 'Escape':
-                this._onBlurInput(e);
+                e.target.value = this.props.message;
+                this._toggleTaskMessageState();
                 break;
 
         }
@@ -123,7 +124,7 @@ export default class Task extends PureComponent {
                         <Edit
                             inlineBlock
                             checked = { edit }
-                            className = { Styles.updateTaskMessageOnClick }
+                            className = { `${Styles.updateTaskMessageOnClick} ${edit && Styles.off}` }
                             color1 = '#3B8EF3'
                             color2 = '#000'
                             onClick = { this._toggleTaskMessageState }
