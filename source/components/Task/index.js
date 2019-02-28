@@ -1,5 +1,5 @@
 // Core
-import React, { PureComponent } from 'react';
+import React, {PureComponent, createRef} from 'react';
 
 // Instruments
 import Styles from './styles.m.css';
@@ -12,7 +12,8 @@ import Star from '../../theme/assets/Star';
 
 export default class Task extends PureComponent {
     state = {
-        edit: false
+        isTaskEditing: false,
+        newMessage: this.props.message,
     };
 
     _getTaskShape = ({
@@ -27,123 +28,149 @@ export default class Task extends PureComponent {
         message,
     });
 
-    input = React.createRef();
+    taskInput = createRef();
 
-    _toggleTaskMessageState = () => {
-        this.setState({
-            edit: !this.state.edit,
-        }, ()=>{
-            this.state.edit && this.input.current.focus();
+    _updateNewTaskMessage = (e) => {
+        const {value: newMessage} = e.target;
 
-            this._changeTaskValue();
-        });
-
+        this.setState({newMessage});
     };
 
-    _changeTaskValue = () => {
-        const { message, _updateTask } = this.props;
-        const value = this.input.current.value;
+    _updateTask = () => {
+        const {_updateTaskAsync, message} = this.props;
+        const {newMessage} = this.state;
 
-        if( value !== message ) {
-            const updatedTask = this._getTaskShape({ message: value });
-            _updateTask(updatedTask);
+        if (message === newMessage) {
+            this._setTaskEditingState(false);
+
+            return null;
         }
+        const updatedTask = this._getTaskShape({message: newMessage});
+
+        _updateTaskAsync(updatedTask);
+        this._setTaskEditingState(false);
     };
 
-    _onKeyDownInput = (e) => {
-        switch (e.key) {
+    _updateTaskMessageOnClick = () => {
+        const {isTaskEditing} = this.state;
+
+        if (isTaskEditing) {
+            this._updateTask();
+
+            return null;
+        }
+        this._setTaskEditingState(!isTaskEditing);
+    };
+
+    _cancelUpdatingTaskMessage = () => {
+        const {message} = this.props;
+
+        this.setState({
+            newMessage: message,
+            isTaskEditing: false,
+        });
+    };
+
+    _updateTaskMessageOnKeyDown = (event) => {
+        const {newMessage} = this.state;
+
+        if (!newMessage) return null;
+
+        switch (event.key) {
             case 'Enter':
-                this._changeTaskValue();
-                this._toggleTaskMessageState();
+                this._updateTask();
                 break;
             case 'Escape':
-                e.target.value = this.props.message;
-                this._toggleTaskMessageState();
+                this._cancelUpdatingTaskMessage();
                 break;
-
         }
     };
 
-    _onBlurInput = (e) => {
-        e.target.value = this.props.message;
-        this._toggleTaskMessageState();
+    _setTaskEditingState = (isTaskEditing) => {
+        this.setState(
+            {isTaskEditing}, () => {
+                if (isTaskEditing) {
+                    this.taskInput.current.focus();
+                }
+            },
+        );
     };
 
-
-
     _toggleTaskCompletedState = () => {
-        const { _updateTask, completed } = this.props;
-        const updateTask = this._getTaskShape({ completed: !completed });
+        const {_updateTaskAsync, completed} = this.props;
+        const updatedTask = this._getTaskShape({
+            completed: !completed
+        });
 
-        _updateTask(updateTask);
+        _updateTaskAsync(updatedTask);
     };
 
     _toggleTaskFavoriteState = () => {
-        const { _updateTask, favorite } = this.props;
-        const updateTask = this._getTaskShape({ favorite: !favorite });
+        const {_updateTaskAsync, favorite} = this.props;
+        const updatedTask = this._getTaskShape({
+            favorite: !favorite
+        });
 
-        _updateTask(updateTask);
+        _updateTaskAsync(updatedTask);
     };
 
-    render () {
-        const { edit } = this.state;
-        const { completed, message, favorite, id, _removeTask } = this.props;
+    _removeTask = () => {
+        const {_removeTaskAsync, id} = this.props;
+
+        _removeTaskAsync(id);
+    };
+
+    render() {
+        const {isTaskEditing, newMessage} = this.state;
+        const {completed, message, favorite} = this.props;
 
         return (
-            <>
-                <li className = { `${Styles.task} ${ completed &&  Styles.completed}` }>
-                    <div className = { Styles.content }>
-                        <Checkbox
-                            inlineBlock
-                            checked = { completed }
-                            className = { Styles.toggleTaskCompletedState }
-                            color1 = '#3B8EF3'
-                            color2 = 'white'
-                            onClick = { this._toggleTaskCompletedState }
-                        />
-                        <input
-                            ref = { this.input }
-                            disabled = { !edit }
-                            maxLength="50"
-                            type="text"
-                            defaultValue= {message}
-                            onKeyDown = { this._onKeyDownInput }
-                            onBlur = { this._onBlurInput}
-                        />
-                    </div>
-
-                    <div className = { Styles.actions }>
-                        <Star
-                            inlineBlock
-                            checked = { favorite }
-                            className = { Styles.toggleTaskFavoriteState }
-                            color1 = '#3B8EF3'
-                            color2 = '#000'
-                            onClick = { this._toggleTaskFavoriteState }
-                        />
-                        <Edit
-                            inlineBlock
-                            checked = { edit }
-                            className = { `${Styles.updateTaskMessageOnClick} ${edit && Styles.off}` }
-                            color1 = '#3B8EF3'
-                            color2 = '#000'
-                            onClick = { this._toggleTaskMessageState }
-                        />
-                        <Remove
-                            inlineBlock
-                            className = { Styles.removeTask }
-                            color1 = '#3B8EF3'
-                            color2 = '#000'
-                            onClick = { _removeTask( id ) }
-                        />
-                    </div>
-
-
-                </li>
-                <div className = { Styles.completed } >
-                    <div className = { Styles.content } ></div>
+            <li className={ `${Styles.task}${ completed ? ' '+Styles.completed : ''}` }>
+                <div className={ Styles.content }>
+                    <Checkbox
+                        inlineBlock
+                        checked = { completed }
+                        className = { Styles.toggleTaskCompletedState }
+                        color1 = '#3B8EF3'
+                        color2 = '#FFF'
+                        onClick = { this._toggleTaskCompletedState }
+                    />
+                    <input
+                        disabled = { !isTaskEditing }
+                        maxLength = { 50 }
+                        ref = { this.taskInput }
+                        type = 'text'
+                        value = { isTaskEditing ? newMessage : message }
+                        onChange = { this._updateNewTaskMessage }
+                        onKeyDown = { this._updateTaskMessageOnKeyDown }
+                    />
                 </div>
-            </>
+                <div className = { Styles.actions }>
+                    <Star
+                        inlineBlock
+                        checked = { favorite }
+                        className = { Styles.toggleTaskFavoriteState }
+                        color1 = '#3B8EF3'
+                        color2 = '#000'
+                        onClick = { this._toggleTaskFavoriteState }
+                    />
+                    <Edit
+                        inlineBlock
+                        checked = { isTaskEditing }
+                        className = { Styles.updateTaskMessageOnClick }
+                        color1 = '#3B8EF3'
+                        color2 = '#000'
+                        onClick = { this._updateTaskMessageOnClick }
+                    />
+                    <Remove
+                        inlineBlock
+                        className = { Styles.removeTask }
+                        color1 = '#3B8EF3'
+                        color2 = '#000'
+                        onClick = { this._removeTask }
+                    />
+                </div>
+            </li>
         );
     }
 }
